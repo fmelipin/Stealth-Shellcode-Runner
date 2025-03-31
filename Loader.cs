@@ -6,7 +6,7 @@ using System.Management.Automation.Runspaces;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace ShellcodeLoader
+namespace Loader
 {
     class Program
     {
