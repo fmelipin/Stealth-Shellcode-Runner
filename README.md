@@ -1,15 +1,19 @@
 # 🧬 Stealth Shellcode Runner – AES + Donut + PowerShell Loader
 
-This project demonstrates a stealthy end-to-end technique to execute an AES-encrypted PowerShell reverse shell using:
+## 🎯 Motivation
 
-- **Process Hollowing**
-- **AES-256-CBC Encryption**
-- **Donut Shellcode Generator**
-- **.NET AMSI Bypass**
-- **Indirect Syscalls**
-- **PPID Spoofing (not implemented, but supported)**
+The main reason behind this project is the high detectability of shellcode generated with tools like `msfvenom`. Even when using encoders, these payloads are often flagged by modern antivirus and EDR solutions due to their known byte patterns and behavioral signatures.
 
-Tested in OSEP-like environments with **Windows Defender enabled**.
+To overcome this limitation, this project was created to:
+
+- Replace `msfvenom` with custom shellcode generated via [Donut](https://github.com/TheWover/donut)
+- Encrypt the shellcode with AES-256-CBC to obfuscate its contents
+- Load and execute it using a stealthy PowerShell-based loader
+- Inject and run the payload through advanced **Process Hollowing** with manually mapped **indirect syscalls**
+
+This execution chain is designed to provide maximum stealth and flexibility, and has been successfully tested in **OSEP-style** lab environments with **Windows Defender** enabled.
+
+---
 
 ## 🛠️ Development Environment
 
@@ -27,6 +31,18 @@ This project was developed and tested using:
 
 ---
 
+## 🔧 Techniques Used
+
+- **Process Hollowing**
+- **AES-256-CBC Encryption**
+- **Donut Shellcode Generator**
+- **.NET AMSI Bypass**
+- **Indirect Syscalls**
+- **PPID Spoofing** *(not implemented, but supported)*
+
+Tested in OSEP-like environments with **Windows Defender enabled**.
+
+---
 
 ## 🧩 Step 1: Build the PowerShell Loader
 
