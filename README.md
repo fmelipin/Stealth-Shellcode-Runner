@@ -1,4 +1,4 @@
-# Stealth-Shellcode-Runner
+# Stealth-Shellcode-Runner (Indirect Syscalls)
 
 # 🔒 Advanced Shellcode Execution via Process Hollowing and AES Encryption
 
