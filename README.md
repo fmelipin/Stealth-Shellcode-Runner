@@ -1,8 +1,8 @@
-# Stealth-Shellcode-Runner (Indirect Syscalls)
+# Stealth-Shellcode-Runner
 
 # 🔒 Advanced Shellcode Execution via Process Hollowing and AES Encryption
 
-This project demonstrates a stealthy approach to executing an AES-encrypted PowerShell reverse shell using a custom C# loader, `donut` for shellcode generation, and a custom runner using **indirect syscalls** and **process hollowing** techniques.
+This project demonstrates a stealthy approach to executing an AES-encrypted PowerShell reverse shell using a custom C# loader, `donut` for shellcode generation, and a custom runner using **full indirect syscalls** and **process hollowing** techniques.
 
 ---
 
@@ -45,24 +45,13 @@ Use [Donut](https://github.com/TheWover/donut) to convert the compiled loader in
 
 ## 🔐 Step 3 - AES Encrypt the Shellcode
 
-Use the Python script to AES-encrypt the generated shellcode.
+Use the provided Python script to AES-encrypt the generated shellcode. It also formats the output into C# arrays:
 
-Paste the generated arrays into your Process Hollowing runner.
+```bash
+python3 aes_encryptor.py
+```
 
----
-
-## 🧠 Step 4 - Execute with Process Hollowing + Indirect Syscalls
-
-Use the included `ShellCode_Runner.cs` script to:
-
-- Create a suspended process (`svchost.exe`)
-- Allocate RWX memory via indirect syscall
-- Decrypt and write the AES-encrypted shellcode
-- Change protection and execute via `NtCreateThreadEx`
-
-> Note: Only `NtAllocateVirtualMemory` uses an indirect syscall via a memory stub. Other syscalls (`NtWriteVirtualMemory`, `NtProtectVirtualMemory`, `NtCreateThreadEx`) are still invoked via direct P/Invoke.
-
-📌 Replace the following placeholders with your actual AES-encrypted shellcode and keys:
+Paste the output into the `ShellCode_Runner.cs` file:
 
 ```csharp
 byte[] encryptedShellcode = new byte[] { ... };
@@ -72,12 +61,24 @@ byte[] aesIV = new byte[] { ... };
 
 ---
 
+## 🧠 Step 4 - Execute with Process Hollowing + Indirect Syscalls
+
+Use the included `ShellCode_Runner.cs` script to:
+
+- Create a suspended process (`svchost.exe`)
+- Allocate RWX memory using **indirect syscall**
+- Decrypt and inject the AES shellcode into the target process
+- Change memory protection and launch a remote thread using **indirect syscall**
+
+✅ All key syscalls (`NtAllocateVirtualMemory`, `NtWriteVirtualMemory`, `NtProtectVirtualMemory`, `NtCreateThreadEx`) are executed from manually copied stubs placed in memory, effectively bypassing userland hooks set by AV/EDR.
+
+---
+
 ## 🖥️ Hosting the Reverse Shell Payload
 
-The PowerShell reverse shell is hosted in a file named `shell.ps1`.
+The PowerShell reverse shell should be saved as `shell.ps1`.
 
-
-Then serve the file using Python's HTTP server from the directory containing `shell.ps1`:
+Then serve the file using Python’s built-in HTTP server:
 
 ```bash
 python3 -m http.server 80
@@ -87,7 +88,7 @@ python3 -m http.server 80
 
 ## 📡 Setting Up the Listener
 
-Use `rlwrap` with `netcat` to handle a fully interactive reverse shell:
+To catch the reverse shell, start a listener using `netcat` and `rlwrap` for a better terminal experience:
 
 ```bash
 rlwrap -cAr nc -lnvp 443
@@ -97,12 +98,14 @@ rlwrap -cAr nc -lnvp 443
 
 ## ✅ Final Outcome
 
-- AMSI is silently patched
+- AMSI is patched silently via .NET Reflection
 - PowerShell payload is downloaded and executed in memory
-- Shellcode is decrypted and injected into a remote process
-- Connection established with full interactivity
-- Tested and working in OSEP lab environments with Defender enabled
+- Shellcode is encrypted with AES and executed via **fully indirect syscalls**
+- Process is created with PPID spoofing
+- Tested successfully in OSEP lab environments with Windows Defender enabled
 
 ---
 
-**Built for OSEP training and red team lab use. Not intended for real-world offensive operations without proper authorization.**
+**⚠️ Legal Notice:**  
+This tool is intended for educational purposes and authorized penetration testing only.  
+Do **not** use this code outside of lab environments or without proper authorization.
