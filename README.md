@@ -2,7 +2,7 @@
 
 # 🔒 Advanced Shellcode Execution via Process Hollowing and AES Encryption
 
-This project demonstrates a stealthy approach to executing an AES-encrypted PowerShell reverse shell using a custom C# loader, `donut` for shellcode generation, and a custom runner using **partial indirect syscalls** and **process hollowing** techniques.
+This project demonstrates a stealthy approach to executing an AES-encrypted PowerShell reverse shell using a custom C# loader, `donut` for shellcode generation, and a custom runner using **indirect syscalls** and **process hollowing** techniques.
 
 ---
 
@@ -51,12 +51,12 @@ Paste the generated arrays into your Process Hollowing runner.
 
 ---
 
-## 🧠 Step 4 - Execute with Process Hollowing + Partial Indirect Syscalls
+## 🧠 Step 4 - Execute with Process Hollowing + Indirect Syscalls
 
 Use the included `ShellCode_Runner.cs` script to:
 
 - Create a suspended process (`svchost.exe`)
-- Allocate RWX memory via partially indirect syscall
+- Allocate RWX memory via indirect syscall
 - Decrypt and write the AES-encrypted shellcode
 - Change protection and execute via `NtCreateThreadEx`
 
