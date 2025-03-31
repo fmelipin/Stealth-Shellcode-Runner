@@ -15,7 +15,7 @@ Tested in OSEP-like environments with **Windows Defender enabled**.
 
 ## 🧩 Step 1: Build the PowerShell Loader
 
-- The C# loader patches AMSI via `.NET Reflection`, downloads a remote PowerShell payload, and executes it in memory using `Runspace`.
+- The C# loader (Loader.cs) patches AMSI via `.NET Reflection`, downloads a remote PowerShell payload, and executes it in memory using `Runspace`.
 - Uses base64 string obfuscation for script names like `shell.ps1`.
 
 📌 **Note:** You may need to reference:
