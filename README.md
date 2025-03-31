@@ -11,7 +11,22 @@ This project demonstrates a stealthy end-to-end technique to execute an AES-encr
 
 Tested in OSEP-like environments with **Windows Defender enabled**.
 
+## 🛠️ Development Environment
+
+This project was developed and tested using:
+
+- **Visual Studio 2022 or newer**
+- **.NET Framework 4.x** (for compatibility with `System.Management.Automation`)
+- **Build configuration**: `Release | x64`
+
+📌 Make sure to open the solution with Visual Studio to:
+
+- Compile `Loader.exe` correctly  
+- Add a reference to `System.Management.Automation.dll` if needed  
+- Export the binary in `Release x64` mode before generating shellcode with Donut
+
 ---
+
 
 ## 🧩 Step 1: Build the PowerShell Loader
 
