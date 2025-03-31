@@ -48,7 +48,7 @@ Use [Donut](https://github.com/TheWover/donut) to convert the compiled loader in
 Use the provided Python script to AES-encrypt the generated shellcode. It also formats the output into C# arrays:
 
 ```bash
-python3 aes_encryptor.py
+python3 Aes_encryption.py
 ```
 
 Paste the output into the `ShellCode_Runner.cs` file:
